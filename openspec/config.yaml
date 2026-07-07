@@ -1,0 +1,20 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Python, FastAPI, LangChain, OpenSearch (vector DB)
+  LLM provider: OpenRouter (free models), optionally Azure OpenAI
+  Domain: Banking data agent (Text-to-SQL)
+  Database: SQLite (local dev), banking scenario (CustomerDeposit etc.)
+  No frontend UI, no auth, no multi-turn conversation
+  Single API endpoint: POST /query
+  Must use RAG pattern: retrieve SQL templates + schema + business context from OpenSearch
+  Must implement "skills" concept for extensibility
+  Must include test dataset with ground truth SQL for evaluation
+
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Focus on architecture decisions
+  tasks:
+    - Break tasks into chunks of max 2 hours
+    - Order tasks by dependency (DB schema first, then vector index, then LLM integration)
