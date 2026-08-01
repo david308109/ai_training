@@ -5,37 +5,37 @@ Banking domain data agent that converts natural language questions into SQL, exe
 ## Architecture
 
 ```
-                      User Question
-                            │
-                            ▼
-┌─────────────┐    ┌──────────────────┐
-│ POST /query │───▶│  RAG Retrieval   │  ◀── OpenSearch (3 indices)
-└─────────────┘    └────────┬─────────┘
+    User Question
+          │
+          ▼
+┌──────────────────┐    ┌──────────────────┐
+│   POST /query    │───▶│  RAG Retrieval   │  ◀── OpenSearch (3 indices)
+└──────────────────┘    └────────┬─────────┘
                             │ max_score
                             ▼
                    ┌──────────────────┐
                    │   Intent Guard   │  (KNN Score < 0.5?)
-                   └───┬──────────┬───┘
-                       │          │
-                    score<0.5   score>=0.5
-                   (chitchat)     │
-                       │          ▼
-                       │   ┌──────────────────┐
-                       │   │  SQL Generation  │  ◀── LLM (OpenRouter)
-                       │   └────────┬─────────┘
-                       │            │ SQL
-                       │            ▼
-                       │   ┌──────────────────┐
-                       │   │ Query Execution  │  ◀── SQLite (read-only)
-                       │   └────────┬─────────┘
-                       │            │ results
-                       ▼            ▼
-                 ┌──────────┐  ┌──────────────────┐
-                 │  Guided  │  │ Answer Synthesis │  ◀── LLM (OpenRouter)
-                 │ Redirect │  │      Skill       │
-                 └────┬─────┘  └────────┬─────────┘
-                      │                 │
-                      ▼                 ▼
+                   └────┬────────┬────┘
+                        │        │
+                     score<0.5 score>=0.5
+                    (chitchat)   │
+                        │        ▼
+                        │  ┌──────────────────┐
+                        │  │  SQL Generation  │  ◀── LLM (OpenRouter)
+                        │  └────────┬─────────┘
+                        │           │ SQL
+                        │           ▼
+                        │  ┌──────────────────┐
+                        │  │ Query Execution  │  ◀── SQLite (read-only)
+                        │  └────────┬─────────┘
+                        │           │ results
+                        ▼           ▼
+                 ┌──────────┐ ┌──────────────────┐
+                 │  Guided  │ │ Answer Synthesis │  ◀── LLM (OpenRouter)
+                 │ Redirect │ │      Skill       │
+                 └────┬─────┘ └────────┬─────────┘
+                      │                │
+                      ▼                ▼
                         JSON Response
 ```
 
