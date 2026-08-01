@@ -1,5 +1,7 @@
 """Skill abstract base class."""
 
+import asyncio
+
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -37,6 +39,5 @@ class Skill(Runnable[dict[str, Any], dict[str, Any]], ABC):
         **kwargs: Any,
     ) -> dict[str, Any]:
         """LangChain compatible sync invocation (wraps async execute)."""
-        import asyncio
 
         return asyncio.run(self.execute(input_data))

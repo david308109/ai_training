@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     # OpenSearch
     opensearch_url: str = "http://localhost:9200"
     opensearch_user: str = "admin"
-    opensearch_password: str = "Chlidd154216@"
+    opensearch_password: str = "Admin@123"
     opensearch_verify_certs: bool = False
 
     # Query execution

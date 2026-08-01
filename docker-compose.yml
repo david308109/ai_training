@@ -21,6 +21,19 @@ services:
     networks:
       - opensearch-net
 
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.17.0
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=["https://opensearch-data-agent:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=false
+    networks:
+      - opensearch-net
+    depends_on:
+      - opensearch
+
 volumes:
   opensearch-data:
 

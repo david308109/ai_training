@@ -62,9 +62,9 @@ Create a `.env` file in the root directory (refer to the settings in `app/config
 OPENROUTER_API_KEY=your_key_here
 
 # OpenSearch
-OPENSEARCH_URL=http://localhost:9200
+OPENSEARCH_URL=http(s)://localhost:9200
 OPENSEARCH_USER=admin
-OPENSEARCH_PASSWORD=admin
+OPENSEARCH_PASSWORD=Admin@123
 ```
 
 ### 3. Start OpenSearch
@@ -73,10 +73,10 @@ OPENSEARCH_PASSWORD=admin
   Execute `bin\opensearch.bat` in your OpenSearch installation directory.
 - **Option B: Docker**
   ```bash
-  docker-compose up -d
+  docker compose up -d
   ```
 
-Wait until OpenSearch is ready (check `http://localhost:9200`).
+Wait until OpenSearch is ready (check `http(s)://localhost:9200`).
 
 
 ### 4. Index Knowledge Base
@@ -109,8 +109,9 @@ python -m app.evaluation.run_eval
 
 If you have **OpenSearch Dashboards** installed:
 1. Run `opensearch-dashboards.bat`.
-2. Access `http://localhost:5601` (User/Pass: admin/admin).
-3. Use **Dev Tools** to query: `GET /sql_templates/_search`.
+2. Access `http(s)://localhost:5601` (User/Pass: admin/admin).
+3. Open the main menu (☰) on the top left and select **Discover**.
+4. Select or create an Index Pattern matching your index (e.g., `sql_templates*`) to inspect the documents.
 ```
 
 ## Project Structure

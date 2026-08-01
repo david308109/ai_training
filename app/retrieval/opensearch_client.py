@@ -1,5 +1,6 @@
 """OpenSearch client for vector search."""
 
+import json
 import logging
 from typing import Any
 
@@ -14,7 +15,7 @@ client = OpenSearch(
     hosts=[settings.opensearch_url],
     http_auth=(settings.opensearch_user, settings.opensearch_password),
     use_ssl=False,  # Set to True if using HTTPS
-    verify_certs=False,
+    verify_certs=settings.opensearch_verify_certs,
     ssl_show_warn=False,
 )
 
@@ -58,7 +59,6 @@ def bulk_index(index_name: str, documents: list[dict[str, Any]]) -> int:
     body = ""
     for doc in documents:
         body += '{"index": {"_index": "' + index_name + '"}}\n'
-        import json
 
         body += json.dumps(doc) + "\n"
 
