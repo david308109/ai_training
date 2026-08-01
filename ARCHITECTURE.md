@@ -12,7 +12,7 @@
 - `orchestrator.py`: 核心流程編排器。使用 **LangChain LCEL** (`|`) 將檢索、SQL 生成、執行與分流邏輯串聯成管線，處理整個查詢生命週期。
 
 ### `app/db/`
-- `database.py`: SQLite 連線管理與 SQL 執行輔助函式。
+- `database.py`: SQLite 連線管理與 SQL 執行輔助函式。`init_db()` 加入檔案存在性檢查，僅在首次啟動建立資料庫，避免每次重開重跑 `schema.sql` 導致數據重複寫入。
 - `schema.sql`: 資料庫架構定義與預設資料。
 - `schema_description.py`: 定義資料庫 schema 的自然語言描述，並提供 `SCHEMA_DESCRIPTIONS_FOR_INDEX` 供向量檢索。目前支援**動態 Schema 選取**與自動 **Fallback** 機制。
 
@@ -39,10 +39,10 @@
 ---
 
 ## 數據流向 (LCEL 管線)
-1. **Retrieval**: 取得上下文。
-2. **SQL Generation + Intent Guard**: 生成 SQL + 複雜度標籤 + 格式模板。若 LLM 判斷問題與資料庫無關，回傳 `sql: null`，直接進入閒聊回覆分支。
+1. **Retrieval + KNN Intent Guard**: 取得 OpenSearch 上下文並計算最高相似度分數 (`_score`)。若最高分數低於門檻 (`RETRIEVAL_INTENT_THRESHOLD = 0.5`)，直接判定為閒聊/非資料庫問題，直接回傳引導訊息，短路後續流程 (0 次 LLM 呼叫)。
+2. **SQL Generation**: 生成 SQL + 複雜度標籤 + 格式模板（若已前置判定為閒聊，則自動跳過 LLM 呼叫）。
 3. **DB Execution**: 執行 SQL 取得資料（閒聊問題跳過此步）。
 4. **Smart Branching**:
-   - 若為 `CHITCHAT`（Intent Guard 攔截）-> **直接回覆引導訊息** (0 次額外 LLM)。
+   - 若為 `CHITCHAT`（Intent Guard 攔截）-> **直接回覆引導訊息** (0 次 LLM 呼叫)。
    - 若為 `simple` 且格式化成功 -> **本地 Python 拼湊答案** (0 次額外 LLM)。
    - 若為 `complex` 或格式化失敗 -> **呼叫 Answer Synthesis** (LLM 合成)。

@@ -157,7 +157,7 @@ app/
 | Database | SQLite | Zero setup, single file, read-only enforcement |
 | Skill Pattern | ABC + Registry | Simple, extensible, no over-engineering |
 | **Schema Handling** | **Dynamic RAG Selection** | **Reduces token usage, avoids LLM confusion with irrelevant tables, includes fallback logic for reliability.** |
-| **Intent Guard** | **Integrated in SQL Generation prompt** | **Zero extra LLM calls. Non-data questions (greetings, chitchat) get `sql: null` and a friendly redirect, avoiding fabricated SQL.** |
+| **Intent Guard** | **KNN Score Threshold in Retrieval Step** | **Zero LLM calls for chitchat/non-DB queries. If highest retrieval score < 0.5, pipeline directly returns guided response.** |
 
 ## API
 
