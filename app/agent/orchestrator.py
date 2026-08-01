@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 def _database_step(context: dict[str, Any]) -> dict[str, Any]:
     """Execute the generated SQL and return updated context."""
+    # If intent guard rejected the query, skip DB execution
+    if context.get("intent") == "CHITCHAT":
+        return context
+
     sql = context.get("generated_sql")
     if not sql:
         return {**context, "query_result": {"error": "No SQL generated"}}
@@ -32,15 +36,20 @@ def _retrieval_step(query: str) -> dict[str, Any]:
         return {"question": query, "error": f"Retrieval failed: {exc}"}
 
 
+def _chitchat_passthrough(context: dict[str, Any]) -> dict[str, Any]:
+    """Pass through chitchat responses without synthesis."""
+    return context
+
+
 async def process_query(query: str, registry: SkillRegistry) -> dict[str, Any]:
     """Run the full pipeline for a natural language query using LCEL.
 
     Steps
     -----
     1. Retrieval (RAG)
-    2. SQL Generation & Complexity Judgement
-    3. Database Execution
-    4. Smart Branching (Local Formatter OR AI Synthesis)
+    2. SQL Generation & Intent Guard (rejects non-data questions with sql=null)
+    3. Database Execution (skipped for chitchat)
+    4. Smart Branching (Local Formatter OR AI Synthesis, skipped for chitchat)
     """
 
     # Skills as Runnables
@@ -49,9 +58,14 @@ async def process_query(query: str, registry: SkillRegistry) -> dict[str, Any]:
     synthesis_skill = registry.get("answer_synthesis")
 
     # Smart Branching logic
-    # Branch A: Local Python Formatter (if simple AND successful)
-    # Branch B: AI Synthesis (default/fallback)
+    # Branch A: Chitchat — intent guard rejected, pass through directly
+    # Branch B: Local Python Formatter (if simple AND successful)
+    # Branch C: AI Synthesis (default/fallback)
     branch = RunnableBranch(
+        (
+            lambda x: x.get("intent") == "CHITCHAT",
+            RunnableLambda(_chitchat_passthrough),
+        ),
         (
             lambda x: x.get("complexity") == "simple" and x.get("response_template"),
             formatter_skill | (lambda x: x if x.get("format_success") else synthesis_skill),

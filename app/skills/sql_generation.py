@@ -13,6 +13,15 @@ import json
 
 logger = logging.getLogger(__name__)
 
+CHITCHAT_RESPONSE = (
+    "您好！我是銀行數據分析助手，專門回答與銀行資料相關的問題。\n\n"
+    "您可以問我類似這樣的問題：\n"
+    "- 目前共有多少客戶？\n"
+    "- 各分行的存款總額是多少？\n"
+    "- 哪位客戶經理管理最多客戶？\n\n"
+    "請問您有什麼資料方面的問題想了解呢？"
+)
+
 SQL_GENERATION_PROMPT = """\
 You are an expert SQL analyst for a banking database. Your job is to generate a structured response containing an executable SQLite SELECT query and a complexity classification.
 
@@ -27,22 +36,24 @@ You are an expert SQL analyst for a banking database. Your job is to generate a 
 
 === RESPONSE FORMAT (Strict JSON) ===
 You must return a JSON object with the following keys:
-1. "sql": The executable SQLite query.
+1. "sql": The executable SQLite query, OR null if the question is NOT related to banking data.
 2. "complexity": Either "simple" or "complex".
    - "simple": Use this for basic lookups of a single value, date, or specific record (e.g., check balance, find branch).
    - "complex": Use this for analytical queries, top-N reports, group-by statistics, or multi-row summaries.
 3. "response_template": (Only if simple) A natural language template for the answer. Use {{column_name}} for placeholders matching your SQL aliases.
    - Example: "Your current balance is {{total}} TWD." (where SQL is "SELECT sum(amount) as total FROM ...")
 4. "thoughts": A brief explanation of your logic.
+5. "rejected_reason": (Only if sql is null) A short explanation of why no SQL was generated.
 
 === RULES ===
-1. Use only SELECT statements. Never use INSERT, UPDATE, DELETE, DROP, or ALTER.
-2. Use the exact table and column names from the schema.
-3. Use table aliases (e.g. d, c) ONLY for queries involving JOINS. For single-table queries, do NOT use table aliases or prefixes (e.g., use "SUM(amount)" instead of "SUM(d.amount)").
-4. If the question is ambiguous, make a reasonable assumption.
-5. Ensure the placeholders in "response_template" exactly match the column aliases in your "sql".
-6. Prefer selecting specific columns over "SELECT *". Use "SELECT *" only when listing full records or when specifically asked for all details.
-7. Use strict alias naming for consistency:
+1. **IMPORTANT — Intent Guard**: If the user's message is NOT a question about banking data (e.g., greetings like "hello", "how are you", chitchat, or topics unrelated to the database), you MUST return {{"sql": null, "complexity": null, "rejected_reason": "<reason>", "thoughts": "Not a database query."}}. Do NOT fabricate a SQL query for non-data questions.
+2. Use only SELECT statements. Never use INSERT, UPDATE, DELETE, DROP, or ALTER.
+3. Use the exact table and column names from the schema.
+4. Use table aliases (e.g. d, c) ONLY for queries involving JOINS. For single-table queries, do NOT use table aliases or prefixes (e.g., use "SUM(amount)" instead of "SUM(d.amount)").
+5. If the question is ambiguous, make a reasonable assumption.
+6. Ensure the placeholders in "response_template" exactly match the column aliases in your "sql".
+7. Prefer selecting specific columns over "SELECT *". Use "SELECT *" only when listing full records or when specifically asked for all details.
+8. Use strict alias naming for consistency:
    - "avg_age" for average age.
    - "avg_deposit" for average deposit amount.
    - "total_deposits" for SUM(amount) of ALL bank deposits.
@@ -50,8 +61,8 @@ You must return a JSON object with the following keys:
    - "total_customers" for total count of ALL customers.
    - "customer_count" for counts of customers per category (e.g., per RM, per branch).
    - "count", "total", "average" ONLY for deposit type breakdown reports.
-8. Prefer LEFT JOIN over JOIN when counting items per category (e.g., customers per RM) to ensure zero counts are included.
-9. Follow the style of the provided SQL templates exactly.
+9. Prefer LEFT JOIN over JOIN when counting items per category (e.g., customers per RM) to ensure zero counts are included.
+10. Follow the style of the provided SQL templates exactly.
 {question}
 
 JSON Output:
@@ -188,15 +199,25 @@ class SQLGenerationSkill(Skill):
             business_context=business_context_text,
             question=question,
         )
-        print(f"Prompt: {prompt}")  # Debug: print the final prompt sent to LLM
+        # print(f"Prompt: {prompt}")  # Debug: print the final prompt sent to LLM
 
         try:
             response = await self._llm.ainvoke(prompt)
             data = _extract_json(response.content)
-            print(f"LLM Response: {response.content}")  # Debug: print raw LLM response
+            #print(f"LLM Response: {response.content}")  # Debug: print raw LLM response
 
-            if not data or "sql" not in data:
-                return {"error": "LLM failed to produce valid SQL JSON"}
+            if not data:
+                return {"error": "LLM failed to produce valid JSON"}
+
+            # Intent Guard: LLM returned sql=null → not a database question
+            if data.get("sql") is None:
+                logger.info("Query rejected by intent guard: %s", data.get("rejected_reason"))
+                return {
+                    "intent": "CHITCHAT",
+                    "answer": CHITCHAT_RESPONSE,
+                    "generated_sql": "",
+                    "thoughts": data.get("thoughts"),
+                }
 
             return {
                 "generated_sql": data["sql"],

@@ -28,7 +28,7 @@
 ### `app/skills/`
 - `base.py`: 定義 `Skill` 抽象基類，繼承自 LangChain `Runnable`，確保所有技能均可透過 LCEL 串接。
 - `registry.py`: 技能註冊中心。
-- `sql_generation.py`: 將自然語言問題轉換為 SQL 的 Skill。採用**動態 Schema 選取**（優先從 OpenSearch 檢索相關表，並始終包含核心表），若檢索分數過低則自動 Fallback 到全量 Schema。同時輸出複雜度判斷與回答模板。
+- `sql_generation.py`: 將自然語言問題轉換為 SQL 的 Skill。內建 **Intent Guard（意圖守衛）**，在同一次 LLM 呼叫中判斷使用者問題是否與資料庫相關——若為閒聊或無關問題，直接回傳 `sql: null` 並短路後續流程，不會產生額外 LLM 呼叫。採用**動態 Schema 選取**（優先從 OpenSearch 檢索相關表，並始終包含核心表），若檢索分數過低則自動 Fallback 到全量 Schema。同時輸出複雜度判斷與回答模板。
 - `response_formatter.py`: 智慧分流模組，嘗試以本地 Python 邏輯格式化答案，減少不必要的 LLM 調用。
 - `answer_synthesis.py`: AI 合成 Skill，作為複雜問題或本地格式化失敗時的後備機制 (Fallback)。
 
@@ -40,8 +40,9 @@
 
 ## 數據流向 (LCEL 管線)
 1. **Retrieval**: 取得上下文。
-2. **SQL Generation**: 生成 SQL + 複雜度標籤 + 格式模板。
-3. **DB Execution**: 執行 SQL 取得資料。
+2. **SQL Generation + Intent Guard**: 生成 SQL + 複雜度標籤 + 格式模板。若 LLM 判斷問題與資料庫無關，回傳 `sql: null`，直接進入閒聊回覆分支。
+3. **DB Execution**: 執行 SQL 取得資料（閒聊問題跳過此步）。
 4. **Smart Branching**:
+   - 若為 `CHITCHAT`（Intent Guard 攔截）-> **直接回覆引導訊息** (0 次額外 LLM)。
    - 若為 `simple` 且格式化成功 -> **本地 Python 拼湊答案** (0 次額外 LLM)。
    - 若為 `complex` 或格式化失敗 -> **呼叫 Answer Synthesis** (LLM 合成)。

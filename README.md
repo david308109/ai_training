@@ -15,21 +15,23 @@ User Question
                              ▼
                     ┌──────────────────┐
                     │  SQL Generation  │  ◀── LLM (OpenRouter)
-                    │     Skill        │
-                    └────────┬─────────┘
-                             │ SQL
-                             ▼
-                    ┌──────────────────┐
-                    │  Query Execution │  ◀── SQLite (read-only)
-                    └────────┬─────────┘
-                             │ results
-                             ▼
-                    ┌──────────────────┐
-                    │ Answer Synthesis │  ◀── LLM (OpenRouter)
-                    │     Skill        │
-                    └────────┬─────────┘
-                             │
-                             ▼
+                    │  + Intent Guard  │
+                    └───┬─────────┬────┘
+                        │         │
+                  sql=null     sql=valid
+                  (chitchat)      │
+                        │         ▼
+                        │  ┌──────────────────┐
+                        │  │  Query Execution │  ◀── SQLite (read-only)
+                        │  └────────┬─────────┘
+                        │           │ results
+                        ▼           ▼
+                  ┌──────┐ ┌──────────────────┐
+                  │引導回覆│ │ Answer Synthesis │  ◀── LLM (OpenRouter)
+                  └──┬───┘ │     Skill        │
+                     │     └────────┬─────────┘
+                     │              │
+                     ▼              ▼
                       JSON Response
 ```
 
@@ -155,6 +157,7 @@ app/
 | Database | SQLite | Zero setup, single file, read-only enforcement |
 | Skill Pattern | ABC + Registry | Simple, extensible, no over-engineering |
 | **Schema Handling** | **Dynamic RAG Selection** | **Reduces token usage, avoids LLM confusion with irrelevant tables, includes fallback logic for reliability.** |
+| **Intent Guard** | **Integrated in SQL Generation prompt** | **Zero extra LLM calls. Non-data questions (greetings, chitchat) get `sql: null` and a friendly redirect, avoiding fabricated SQL.** |
 
 ## API
 
