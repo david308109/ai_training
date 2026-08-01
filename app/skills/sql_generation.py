@@ -182,6 +182,11 @@ class SQLGenerationSkill(Skill):
         question = context.get("question", "")
         retrieved = context.get("retrieved", {})
 
+        # If already marked as CHITCHAT by KNN score check in retrieval step, skip LLM call
+        if context.get("intent") == "CHITCHAT":
+            logger.info("Query already marked as CHITCHAT, skipping SQL generation LLM call.")
+            return context
+
         sql_templates_text = _format_sql_templates(
             retrieved.get("sql_templates", [])
         )

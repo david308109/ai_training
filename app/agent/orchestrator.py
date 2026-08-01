@@ -26,11 +26,43 @@ def _database_step(context: dict[str, Any]) -> dict[str, Any]:
     return {**context, "query_result": query_result}
 
 
+CHITCHAT_RESPONSE = (
+    "您好！我是銀行數據分析助手，專門回答與銀行資料相關的問題。\n\n"
+    "您可以問我類似這樣的問題：\n"
+    "- 目前共有多少客戶？\n"
+    "- 各分行的存款總額是多少？\n"
+    "- 哪位客戶經理管理最多客戶？\n\n"
+    "請問您有什麼資料方面的問題想了解呢？"
+)
+
+RETRIEVAL_INTENT_THRESHOLD = 0.8
+
+
 def _retrieval_step(query: str) -> dict[str, Any]:
-    """Retrieve context from OpenSearch."""
+    """Retrieve context from OpenSearch and check similarity score."""
     try:
         retrieved = retrieve(query)
-        return {"question": query, "retrieved": retrieved}
+        
+        # 算最高分
+        max_score = 0.0
+        for docs in retrieved.values():
+            for doc in docs:
+                score = doc.get("_score", 0.0)
+                if score > max_score:
+                    max_score = score
+                    
+        logger.info("Max retrieval KNN score: %.4f", max_score)
+
+        context = {"question": query, "retrieved": retrieved}
+
+        # 如果最高分小於門檻，直接判定為閒聊/非資料庫問題
+        if max_score < RETRIEVAL_INTENT_THRESHOLD:
+            logger.info("Retrieval score %.4f < threshold %.2f, marking as CHITCHAT", max_score, RETRIEVAL_INTENT_THRESHOLD)
+            context["intent"] = "CHITCHAT"
+            context["answer"] = CHITCHAT_RESPONSE
+            context["generated_sql"] = ""
+
+        return context
     except Exception as exc:
         logger.error("Retrieval failed: %s", exc)
         return {"question": query, "error": f"Retrieval failed: {exc}"}
