@@ -35,7 +35,12 @@ def get_connection(readonly: bool = False) -> sqlite3.Connection:
 
 
 def init_db() -> None:
-    """Create tables and load seed data from schema.sql (idempotent)."""
+    """Create tables and load seed data from schema.sql ONLY if db does not exist."""
+    path = _db_path()
+    if path.exists():
+        logger.info("Database file already exists at %s, skipping initialization.", path)
+        return
+
     schema_file = Path(__file__).parent / "schema.sql"
     sql = schema_file.read_text(encoding="utf-8")
 
@@ -43,7 +48,7 @@ def init_db() -> None:
     try:
         conn.executescript(sql)
         conn.commit()
-        logger.info("Database initialised at %s", _db_path())
+        logger.info("Database initialised at %s", path)
     finally:
         conn.close()
 
