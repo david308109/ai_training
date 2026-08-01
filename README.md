@@ -14,10 +14,10 @@ Banking domain data agent that converts natural language questions into SQL, exe
                                   │ max_score
                                   ▼
                           ┌──────────────────┐
-                          │   Intent Guard   │  (KNN Score < 0.5?)
+                          │   Intent Guard   │  (KNN Score < 0.8?)
                           └────┬────────┬────┘
                                │        │
-                            score<0.5 score>=0.5
+                            score<0.8 score>=0.8
                           (chitchat)    │
                                │        ▼
                                │  ┌──────────────────┐
