@@ -42,22 +42,25 @@ def _retrieval_step(query: str) -> dict[str, Any]:
     """Retrieve context from OpenSearch and check similarity score."""
     try:
         retrieved = retrieve(query)
-        
+
         # 算最高分
         max_score = 0.0
         for docs in retrieved.values():
             for doc in docs:
                 score = doc.get("_score", 0.0)
-                if score > max_score:
-                    max_score = score
-                    
+                max_score = max(max_score, score)
+
         logger.info("Max retrieval KNN score: %.4f", max_score)
 
         context = {"question": query, "retrieved": retrieved}
 
         # 如果最高分小於門檻，直接判定為閒聊/非資料庫問題
         if max_score < RETRIEVAL_INTENT_THRESHOLD:
-            logger.info("Retrieval score %.4f < threshold %.2f, marking as CHITCHAT", max_score, RETRIEVAL_INTENT_THRESHOLD)
+            logger.info(
+                "Retrieval score %.4f < threshold %.2f, marking as CHITCHAT",
+                max_score,
+                RETRIEVAL_INTENT_THRESHOLD,
+            )
             context["intent"] = "CHITCHAT"
             context["answer"] = CHITCHAT_RESPONSE
             context["generated_sql"] = ""
@@ -100,7 +103,8 @@ async def process_query(query: str, registry: SkillRegistry) -> dict[str, Any]:
         ),
         (
             lambda x: x.get("complexity") == "simple" and x.get("response_template"),
-            formatter_skill | (lambda x: x if x.get("format_success") else synthesis_skill),
+            formatter_skill
+            | (lambda x: x if x.get("format_success") else synthesis_skill),
         ),
         synthesis_skill,
     )
