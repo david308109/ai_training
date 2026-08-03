@@ -35,7 +35,7 @@ CHITCHAT_RESPONSE = (
     "請問您有什麼資料方面的問題想了解呢？"
 )
 
-RETRIEVAL_INTENT_THRESHOLD = 0.8
+RETRIEVAL_INTENT_THRESHOLD = 0.75
 
 
 def _retrieval_step(query: str) -> dict[str, Any]:

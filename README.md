@@ -14,10 +14,10 @@ Banking domain data agent that converts natural language questions into SQL, exe
                                   │ max_score
                                   ▼
                           ┌──────────────────┐
-                          │   Intent Guard   │  (KNN Score < 0.8?)
+                          │   Intent Guard   │  (KNN Score < 0.75?)
                           └────┬────────┬────┘
                                │        │
-                            score<0.8 score>=0.8
+                            score<0.75 score>=0.75
                           (chitchat)    │
                                │        ▼
                                │  ┌──────────────────┐
@@ -161,7 +161,7 @@ app/
 | Database | SQLite | Zero setup, single file, read-only enforcement |
 | Skill Pattern | ABC + Registry | Simple, extensible, no over-engineering |
 | **Schema Handling** | **Dynamic RAG Selection** | **Reduces token usage, avoids LLM confusion with irrelevant tables, includes fallback logic for reliability.** |
-| **Intent Guard** | **KNN Score Threshold in Retrieval Step** | **Zero LLM calls for chitchat/non-DB queries. If highest retrieval score < 0.8, pipeline directly returns guided response.** |
+| **Intent Guard** | **KNN Score Threshold in Retrieval Step** | **Zero LLM calls for chitchat/non-DB queries. If highest retrieval score < 0.75, pipeline directly returns guided response.** |
 
 ## API
 
