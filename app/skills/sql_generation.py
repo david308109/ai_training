@@ -14,12 +14,12 @@ import json
 logger = logging.getLogger(__name__)
 
 CHITCHAT_RESPONSE = (
-    "您好！我是銀行數據分析助手，專門回答與銀行資料相關的問題。\n\n"
-    "您可以問我類似這樣的問題：\n"
-    "- 目前共有多少客戶？\n"
-    "- 各分行的存款總額是多少？\n"
-    "- 哪位客戶經理管理最多客戶？\n\n"
-    "請問您有什麼資料方面的問題想了解呢？"
+    "Hello! I'm the Banking Data Analysis Assistant, here to help answer questions about banking data.\n\n"
+    "You can ask questions like:\n"
+    "- How many customers are there?\n"
+    "- What is the total deposit amount for each branch?\n"
+    "- Which relationship manager oversees the most customers?\n\n"
+    "What would you like to know about the banking data?"
 )
 
 SQL_GENERATION_PROMPT = """\
