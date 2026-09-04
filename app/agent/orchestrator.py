@@ -91,6 +91,7 @@ async def process_query(query: str, registry: SkillRegistry) -> dict[str, Any]:
     sql_skill = registry.get("sql_generation")
     formatter_skill = registry.get("response_formatter")
     synthesis_skill = registry.get("answer_synthesis")
+    print(77777777777777777777)
 
     # Smart Branching logic
     # Branch A: Chitchat — intent guard rejected, pass through directly
