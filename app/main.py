@@ -74,6 +74,7 @@ async def handle_query(req: QueryRequest):
 
 @app.get("/health")
 async def health():
+    print("Health check")
     return {"status": "ok"}
 
 
